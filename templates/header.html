@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Signal Strength</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            width: 100%;
+            height: 40px;
+            background:hsla(300, 100%, 5%, 0.909);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000; 
+            box-sizing: border-box;
+        }
+
+        .header .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .header .logo i {
+            font-size: 20px;
+            margin-right: 10px;
+            color: aliceblue;
+        }
+
+        .header .status-icons {
+            display: flex;
+            align-items: center;
+        }
+
+        .header .status-icons i {
+            font-size: 20px;
+            margin-left: 15px;
+            color: red; /* Default color for disconnected */
+        }
+
+        .header .logout {
+            display: flex;
+            align-items: center;
+        }
+
+        .header .logout button {
+            background: rgb(104, 97, 104);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            height: 30px;
+            transition: background 0.3s ease;
+            padding: 0 20px; /* Add padding for width */
+            display: flex;
+            align-items: center; /* Center align text vertically */
+            justify-content: center; /* Center align text horizontally */
+            box-sizing: border-box;
+        }
+
+        .header .logout button:hover {
+            background: hsl(0, 0%, 2%);
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                height: auto;
+            }
+
+            .header .logo, 
+            .header .status-icons, 
+            .header .logout {
+                margin-bottom: 10px;
+            }
+
+            .header .status-icons {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .header .logout button {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <a href="/dashboard"><i class="fas fa-home"></i></a>
+        </div>
+        <div class="status-icons">
+            <i id="ethernet-icon" class="fas fa-ethernet"></i>
+            <i id="wifi-icon" class="fas fa-wifi"></i>
+        </div>
+        <div class="logout">
+            <button onclick="window.location.href='/logout'">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        async function fetchSignalStrength() {
+            try {
+                let response = await fetch('/api/signal_strength');
+                let data = await response.json();
+                if (response.ok) {
+                    let signalStrength = data.signal_strength;
+                    updateWiFiStatus(signalStrength);
+                } else {
+                    console.error('Error fetching signal strength:', data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function updateWiFiStatus(signalStrength) {
+            const wifiIcon = document.getElementById('wifi-icon');
+            if (signalStrength > -50) {
+                wifiIcon.style.color = 'darkgreen'; // Full signal
+            } else if (-50 > signalStrength && signalStrength > -60) {
+                wifiIcon.style.color = 'lightgreen'; // Three bars
+            } else if (-60 > signalStrength && signalStrength > -70) {
+                wifiIcon.style.color = 'yellow'; // Two bars
+            } else if (-70 > signalStrength && signalStrength > -80) {
+                wifiIcon.style.color = 'orange'; // One bar
+            } else {
+                wifiIcon.style.color = 'red'; // Weak signal
+            }
+        }
+
+        fetchSignalStrength();
+        setInterval(fetchSignalStrength, 5000);
+    </script>
+</body>
+</html>

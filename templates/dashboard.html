@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        background: linear-gradient(135deg, rgba(128, 0, 128, 0.8), rgba(75, 0, 130, 0.7), rgba(147, 112, 219, 0.7));
+        background-size: cover;
+    }
+
+    .container {
+        display: flex;
+        width: 100%;
+        height: calc(100% - 60px);
+    }
+
+    .sidebar {
+        width: 250px;
+        background: white;
+        padding: 20px;
+        border-right: 1px solid #ddd;
+        height: 100%;
+        position: fixed;
+        top: 60px;
+        left: 0;
+    }
+
+    .main-content {
+        margin-left: 250px;
+        padding: 20px;
+        width: calc(100% - 250px);
+        overflow-y: auto;
+    }
+
+    #plot {
+        width: 100%;
+        height: 500px;
+    }
+
+    .feedback-form {
+        display: none;
+        padding: 20px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        margin: 50px auto;
+    }
+
+    .feedback-form textarea {
+        width: 100%;
+        height: 100px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        resize: none;
+    }
+
+    .feedback-form button[type="submit"] {
+        background: purple;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        padding: 10px 20px;
+    }
+
+    .feedback-form button[type="submit"]:hover {
+        background: darkorchid;
+    }
+    
+    .container {
+        margin-top: 60px;
+    }
+</style>
+
+{% include "header.html" %}
+{% include "navbar.html" %}
+
+<div class="container">
+    <div class="main-content" id="main-content">
+        <div id="plot"></div>
+        <div class="feedback-form" id="feedback-form">
+            <label for="feedback">Enter the model feedback here:</label>
+            <textarea id="feedback" name="feedback"></textarea>
+            <button type="submit">Submit</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function fetchWifiSignalStrength() {
+        try {
+            const response = await fetch('/wifi_signal');
+            const data = await response.json();
+            // Update WiFi status here if needed
+        } catch (error) {
+            console.error('Error fetching WiFi signal strength:', error);
+        }
+    }
+
+    function updateEthernetStatus(isConnected) {
+        // Update Ethernet status here if needed
+    }
+
+    // Fetch WiFi signal strength every 3 seconds
+    setInterval(fetchWifiSignalStrength, 3000);
+
+    // Simulated real-time updates for Ethernet status
+    setInterval(() => {
+        const isConnected = Math.random() > 0.5;
+        updateEthernetStatus(isConnected);
+    }, 3000);
+
+    var data = [];
+    var diffs = [];
+    var layout = { 
+        title: 'Firewall Traffic', 
+        xaxis: { type: 'date', tickformat: '%H:%M:%S' },
+        transition: { duration: 500, easing: 'cubic-in-out' }
+    };
+    var config = { responsive: true };
+
+    var plotDiv = document.getElementById('plot');
+    var plot = Plotly.newPlot(plotDiv, [{ y: data }], layout, config);
+
+    var eventSource = new EventSource('/firewall_traffic');
+    eventSource.onmessage = function (event) {
+        data.push(parseInt(event.data));
+        if (data.length >= 2) {
+            let diff = Math.abs(data[data.length - 1] - data[data.length - 2]);
+            diffs.push(diff);
+            Plotly.update(plotDiv, { y: [diffs], type: 'scatter' });
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const feedbackForm = document.getElementById('feedback-form');
+        const feedbackTextarea = document.getElementById('feedback');
+
+        feedbackForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const feedback = feedbackTextarea.value.trim();
+            if (feedback) {
+                const username = '{{ username }}'; // Assuming you have a username variable in your template
+                const formData = new FormData();
+                formData.append('feedback', feedback);
+                formData.append('username', username);
+
+                fetch('/send_feedback', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Feedback sent successfully');
+                        feedbackTextarea.value = ''; // Clear textarea
+                        feedbackForm.classList.remove('show'); // Hide feedback form
+                    } else {
+                        console.error('Failed to send feedback:', data.error);
+                    }
+                })
+                .catch(error => console.error('Error sending feedback:', error));
+            }
+        });
+
+        // Hide feedback form when typing starts
+        feedbackTextarea.addEventListener('input', function() {
+            feedbackForm.classList.remove('show');
+        });
+
+        const feedbackLink = document.querySelector('.submenu li a[href*="Feedback"]');
+        feedbackLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            feedbackForm.classList.add('show');
+        });
+    });
+</script>
+{% endblock %}

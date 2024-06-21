@@ -1,0 +1,17 @@
+# def fetch_interface_statistics():
+#     while True:
+#         try:
+#             response = requests.get(url, auth=auth, verify=False)
+#             if response.status_code == 200:
+#                 data = response.json()
+#                 interface_stats = data.get("statistics", {}).get("[pflog0] / pflog0", {})
+#                 bytes = int(interface_stats.get("sent-bytes", 0))
+#                 yield f"data:{bytes}\n\n"
+#             else:
+#                 yield f"data:0\n\n"
+#         except Exception as e:
+#             yield f"data:0\n\n"
+
+# @app.route('/firewall_traffic')
+# def random_data():
+#     return Response(fetch_interface_statistics(), mimetype='text/event-stream')
